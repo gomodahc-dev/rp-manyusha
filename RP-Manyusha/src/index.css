@@ -1,0 +1,13 @@
+/* Минимум стилей: сам компонент красится инлайн-стилями.
+   Utility-классы (w-full, flex и т.п.) оставлены как есть;
+   если захочешь Tailwind — скажи, прикручу. */
+* { box-sizing: border-box; }
+html, body, #root { min-height: 100%; }
+body {
+  margin: 0;
+  background: #121014;
+  color: #f1efe9;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+button { cursor: pointer; }
+img { max-width: 100%; }
