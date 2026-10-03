@@ -38,6 +38,7 @@ export default function CaseOpeningSite() {
   const [craftPhase, setCraftPhase] = useState("idle"); // idle | burning | result
   const [craftResult, setCraftResult] = useState(null); // { success, item? }
   const [buyTab, setBuyTab] = useState("cases"); // cases | capsules | secret
+  const [shopFilter, setShopFilter] = useState("all"); // all | cars | moto | phones | clothes | items
 
   const [questsOpen, setQuestsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -1603,10 +1604,10 @@ export default function CaseOpeningSite() {
       className="min-h-screen w-full flex flex-col items-center"
       style={{
         background:
-          "radial-gradient(1100px 550px at 12% -8%, rgba(198,255,61,0.07) 0%, transparent 60%)," +
-          "radial-gradient(900px 500px at 105% 8%, rgba(255,46,196,0.08) 0%, transparent 55%)," +
-          "radial-gradient(800px 480px at 50% 118%, rgba(56,189,248,0.06) 0%, transparent 60%)," +
-          "#121014",
+          "radial-gradient(1100px 520px at 12% -8%, rgba(124,92,255,0.16) 0%, transparent 60%)," +
+          "radial-gradient(900px 480px at 105% 6%, rgba(255,94,196,0.12) 0%, transparent 55%)," +
+          "radial-gradient(1000px 600px at 50% 115%, rgba(46,110,255,0.10) 0%, transparent 60%)," +
+          "linear-gradient(180deg, #100d1a 0%, #0d0b14 40%, #0d0b14 100%)",
         fontFamily: "system-ui, sans-serif",
       }}
     >
@@ -1937,16 +1938,23 @@ export default function CaseOpeningSite() {
               <button
                 onClick={() => (isCapsuleActive ? openCapsule(selectedCaseId) : openCase())}
                 disabled={spinning || shaking || mustResolve || activeOwned < effectiveSpinCount}
-                className="text-xs font-bold tracking-wide px-4 py-1.5 rounded-sm"
+                className="text-sm font-extrabold tracking-widest px-8 py-3.5 rounded-xl w-full"
                 style={{
                   background:
-                    spinning || shaking || mustResolve || activeOwned < effectiveSpinCount ? "#2c2930" : "#c6ff3d",
+                    spinning || shaking || mustResolve || activeOwned < effectiveSpinCount
+                      ? "#232030"
+                      : "linear-gradient(92deg,#ffe9a8 0%,#ffd76a 35%,#ff9d2e 70%,#ff7a3d 100%)",
                   color:
-                    spinning || shaking || mustResolve || activeOwned < effectiveSpinCount ? "#6b6870" : "#121014",
+                    spinning || shaking || mustResolve || activeOwned < effectiveSpinCount ? "#6b6870" : "#241500",
                   cursor:
                     spinning || shaking || mustResolve || activeOwned < effectiveSpinCount
                       ? "not-allowed"
                       : "pointer",
+                  boxShadow:
+                    spinning || shaking || mustResolve || activeOwned < effectiveSpinCount
+                      ? "none"
+                      : "0 8px 32px #ff9d2e55, inset 0 1px 0 #ffffff88",
+                  border: "1px solid #ffe9a888",
                 }}
               >
                 {spinning || shaking
@@ -2457,8 +2465,32 @@ export default function CaseOpeningSite() {
 
             <div className="overflow-y-auto px-4 py-3 flex flex-col gap-2">
               {buyTab === "cases" && (
-                <div className="grid grid-cols-3 gap-2.5">
-                  {CASES.filter((c) => !c.free && !c.usesKeys).map((c) => {
+                <>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {[
+                      { id: "all", label: "Все" },
+                      { id: "cars", label: "🚗 Авто" },
+                      { id: "moto", label: "🏍️ Мото" },
+                      { id: "phones", label: "📱 Телефоны" },
+                      { id: "clothes", label: "👕 Одежда" },
+                      { id: "items", label: "📦 Хлам" },
+                    ].map((f) => (
+                      <button
+                        key={f.id}
+                        onClick={() => setShopFilter(f.id)}
+                        className="text-[11px] font-bold px-2.5 py-1 rounded-full"
+                        style={{
+                          background: shopFilter === f.id ? "linear-gradient(90deg,#ffd76a,#ff9d2e)" : "#1b1922",
+                          color: shopFilter === f.id ? "#1a1405" : "#8f8b93",
+                          border: `1px solid ${shopFilter === f.id ? "#ffd76a" : "#2c2938"}`,
+                        }}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-3 gap-2.5">
+                    {CASES.filter((c) => !c.free && !c.usesKeys && (shopFilter === "all" || c.category === shopFilter)).map((c) => {
                     const price = discountActive ? effectiveCasePrice(c.price, state, nowTick) : c.price;
                     const canAfford = balance >= price;
                     const glow = caseGlowColor(c.price);
@@ -2468,16 +2500,8 @@ export default function CaseOpeningSite() {
                         className="case-tile rounded-xl p-2 flex flex-col items-center text-center"
                         style={{ background: "#17151a", border: `1px solid ${glow}44`, "--glow": glow }}
                       >
-                        <div
-                          className="relative w-full aspect-square rounded-lg flex items-center justify-center flex-shrink-0"
-                          style={{
-                            background: `radial-gradient(circle, ${glow}26, #17151a 72%)`,
-                            border: `1px solid ${glow}77`,
-                            boxShadow: `0 0 16px ${glow}66, inset 0 0 14px ${glow}33`,
-                            fontSize: 32,
-                          }}
-                        >
-                    <CaseIcon id={c.id} size={40} />
+                        <div className="relative w-full flex items-center justify-center flex-shrink-0" style={{ padding: "6px 0 2px" }}>
+                          <CaseIcon id={c.id} size={72} />
                           <button
                             onClick={() => setPreviewCaseId(c.id)}
                             className="absolute top-1 right-1 flex items-center justify-center rounded-full"
@@ -2517,6 +2541,7 @@ export default function CaseOpeningSite() {
                     );
                   })}
                 </div>
+                </>
               )}
 
               {buyTab === "capsules" &&

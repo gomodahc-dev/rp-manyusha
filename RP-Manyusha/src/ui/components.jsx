@@ -4,13 +4,17 @@ import { CASE_BY_ID } from "../data/cases.js";
 
 export function Hazard({ className = "" }) {
   return (
-    <div
-      className={`h-2 w-full ${className}`}
-      style={{
-        backgroundImage:
-          "repeating-linear-gradient(135deg, #ffcc00 0px, #ffcc00 14px, #17151a 14px, #17151a 28px)",
-      }}
-    />
+    <div className={`w-full ${className}`} style={{ padding: "10px 0 2px" }}>
+      <div
+        style={{
+          height: 2,
+          background:
+            "linear-gradient(90deg, transparent, #7c5cffcc 20%, #ffd76acc 50%, #ff5ec4cc 80%, transparent)",
+          boxShadow: "0 0 12px #7c5cff66",
+          borderRadius: 2,
+        }}
+      />
+    </div>
   );
 }
 
