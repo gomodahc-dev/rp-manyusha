@@ -1,6 +1,7 @@
-/* Минимум стилей: сам компонент красится инлайн-стилями.
-   Utility-классы (w-full, flex и т.п.) оставлены как есть;
-   если захочешь Tailwind — скажи, прикручу. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 * { box-sizing: border-box; }
 html, body, #root { min-height: 100%; }
 body {
