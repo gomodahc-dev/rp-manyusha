@@ -59,3 +59,24 @@ begin
   return query select true, 'ok';
 end;
 $$;
+
+-- Заявки на донат: игрок нажал «Я оплатил», админ проверяет и начисляет.
+-- Позже сюда же пишет вебхук платёжки (Lava/CrystalPay) со status='paid',
+-- а начисление делает серверная функция — игрокам ничего ждать не надо.
+create table if not exists pending_payments (
+  id bigint generated always as identity primary key,
+  player_id text not null,
+  pack_id text not null,
+  coins integer not null default 0,
+  price_label text not null default '',
+  status text not null default 'pending',
+  created_at timestamptz not null default now()
+);
+create index if not exists pending_payments_status_idx on pending_payments (status);
+create index if not exists pending_payments_player_idx on pending_payments (player_id);
+
+alter table pending_payments enable row level security;
+drop policy if exists "pending insert" on pending_payments;
+create policy "pending insert" on pending_payments for insert with check (true);
+drop policy if exists "pending read own" on pending_payments;
+create policy "pending read own" on pending_payments for select using (true);

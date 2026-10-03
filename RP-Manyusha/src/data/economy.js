@@ -1,8 +1,8 @@
 export const DONATE_PACKS = [
-  { id: "bomj", name: "Бомж Пак", icon: "🥫", coins: 27000, priceUah: 180 },
-  { id: "student", name: "Пак Студента", icon: "🎒", coins: 50000, priceUah: 250 },
-  { id: "reseller", name: "Пак Перекупа", icon: "🚗", coins: 140000, priceUah: 550 },
-  { id: "mazhor", name: "Пак Мажора", icon: "👑", coins: 500000, priceUah: 1650 },
+  { id: "bomj", name: "Бомж Пак", icon: "🥫", coins: 27000, priceUah: 180, tag: null, bonus: null },
+  { id: "student", name: "Пак Студента", icon: "🎒", coins: 50000, priceUah: 250, tag: "ПОПУЛЯРНЫЙ", bonus: "+33% к курсу" },
+  { id: "reseller", name: "Пак Перекупа", icon: "🚗", coins: 140000, priceUah: 550, tag: "ВЫГОДНО", bonus: "+70% к курсу" },
+  { id: "mazhor", name: "Пак Мажора", icon: "👑", coins: 500000, priceUah: 1650, tag: "МАКСИМУМ", bonus: "+102% к курсу" },
 ];
 
 export const RUB_MULTIPLIER = 1.8;

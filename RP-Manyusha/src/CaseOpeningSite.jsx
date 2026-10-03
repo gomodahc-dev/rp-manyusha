@@ -8,7 +8,9 @@ import { weightedPick, fmt, fmtMoney, caseGlowColor, isVipActive, effectiveCaseP
 import { playTone, scheduleSpinTicks, playRevealSound, playKeepSound, playSellSound, playDisassembleSound, playPaydaySound, playWheelWinSound, playClaimSound, playProfileOpenSound, playSoftClickSound, playPurchaseSound, scheduleCapsuleRattle } from "./game/sound.js";
 import { STORAGE_KEY, DEFAULT_STATE, migrateState, getReadyStorage, getGlobalCounter, setGlobalCounter } from "./game/storage.js";
 import { syncForbesCloud, loadForbesCloud, claimPromoCloud, isBackendEnabled } from "./game/backend.js";
+import { donatePayUrl, createPendingPayment, adminContact } from "./game/payments.js";
 import { Hazard, rarityOf, CarIcon, ItemIcon, CapsuleIcon, Chip, ReelCard, Avatar, BpNode, Coin } from "./ui/components.jsx";
+import { CaseIcon } from "./ui/caseIcons.jsx";
 
 export default function CaseOpeningSite() {
   const [loaded, setLoaded] = useState(false);
@@ -1348,8 +1350,41 @@ export default function CaseOpeningSite() {
   const showDonateToast = useCallback(() => {
     setDonateToast(true);
     clearTimeout(donateToastRef.current);
-    donateToastRef.current = setTimeout(() => setDonateToast(false), 3000);
+    donateToastRef.current = setTimeout(() => setDonateToast(false), 4000);
   }, []);
+
+  // Донат: двухшаговая оплата. Шаг 1 — открыть ссылку оплаты (если настроена),
+  // шаг 2 — «Я оплатил» создаёт заявку, монеты приходят после проверки.
+  const [donatePendingId, setDonatePendingId] = useState(null);
+  const startDonate = useCallback(
+    (pack, priceLabel, kind) => {
+      const pid = kind === "vip" ? `vip:${pack.id}` : pack.id;
+      const url = donatePayUrl({ ...pack, vipFallbackRub: undefined }, donateCurrency, stateRef.current?.playerId);
+      if (url) {
+        try {
+          window.open(url, "_blank", "noopener");
+        } catch (e) {}
+      }
+      setDonatePendingId(pid);
+      if (soundOnRef.current) playSoftClickSound();
+    },
+    [donateCurrency]
+  );
+  const confirmDonatePaid = useCallback(
+    (pack, priceLabel, kind) => {
+      const pid = kind === "vip" ? `vip:${pack.id}` : pack.id;
+      createPendingPayment({
+        playerId: stateRef.current?.playerId,
+        packId: pid,
+        coins: kind === "vip" ? 0 : pack.coins,
+        priceLabel,
+        vipLabel: kind === "vip" ? pack.label : null,
+      });
+      setDonatePendingId(null);
+      showDonateToast();
+    },
+    [showDonateToast]
+  );
 
   const closeDonate = useCallback(() => setDonateOpen(false), []);
 
@@ -1815,12 +1850,9 @@ export default function CaseOpeningSite() {
             <span style={{ width: 28, height: 1, background: "linear-gradient(90deg, #ff5e2e88, transparent)" }} />
           </div>
           <h1
-            className="text-4xl sm:text-5xl mt-2 relative"
+            className="mj-title text-4xl sm:text-5xl mt-2 relative"
             style={{
-              fontFamily: '"Arial Black", Impact, sans-serif',
-              color: "#f1efe9",
-              letterSpacing: "-0.02em",
-              textShadow: "0 0 24px #ff5e2e33",
+              fontSize: "clamp(30px, 6vw, 52px)",
             }}
           >
             РП МАНЮША
@@ -1850,7 +1882,7 @@ export default function CaseOpeningSite() {
               {isCapsuleActive ? (
                 <CapsuleIcon size={16} variant={activeCapsuleVariant} />
               ) : (
-                <span style={{ fontSize: 18 }}>{activeCase?.usesKeys ? "🗝️" : active.boxIcon}</span>
+                <span style={{ display: "inline-flex" }}>{activeCase?.usesKeys ? <CaseIcon id="secret2026" size={22} /> : <CaseIcon id={active.id} size={22} />}</span>
               )}
               <div className="text-xs text-center" style={{ color: "#8f8b93" }}>
                 {isCapsuleActive ? "КАПСУЛ" : activeCase?.usesKeys ? "КЛЮЧЕЙ" : "КЕЙСОВ"} «{active.name.split(" ")[0]}»
@@ -1876,7 +1908,7 @@ export default function CaseOpeningSite() {
                   boxShadow: "0 0 20px #ff5e2e33",
                 }}
               >
-                {isCapsuleActive ? <CapsuleIcon size={26} variant={activeCapsuleVariant} /> : activeCase?.usesKeys ? "🗝️" : active.boxIcon}
+                {isCapsuleActive ? <CapsuleIcon size={26} variant={activeCapsuleVariant} /> : activeCase?.usesKeys ? <CaseIcon id="secret2026" size={30} /> : <CaseIcon id={active.id} size={30} />}
               </div>
               <div className="text-xs font-bold text-center" style={{ color: "#f1efe9" }}>
                 {active.name}
@@ -2203,7 +2235,7 @@ export default function CaseOpeningSite() {
                     className="w-12 h-12 rounded flex items-center justify-center text-2xl flex-shrink-0"
                     style={{ background: "linear-gradient(160deg,#2a2730,#17151a)" }}
                   >
-                    {c.boxIcon}
+                          <CaseIcon id={c.id} size={46} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-bold truncate" style={{ color: "#f1efe9" }}>
@@ -2445,7 +2477,7 @@ export default function CaseOpeningSite() {
                             fontSize: 32,
                           }}
                         >
-                          {c.boxIcon}
+                    <CaseIcon id={c.id} size={40} />
                           <button
                             onClick={() => setPreviewCaseId(c.id)}
                             className="absolute top-1 right-1 flex items-center justify-center rounded-full"
@@ -3961,8 +3993,8 @@ export default function CaseOpeningSite() {
                   </button>
                 ))}
               </div>
-              <div className="text-[10px] text-center mb-3" style={{ color: "#5c5860" }}>
-                оплата пока в разработке — это витрина паков
+              <div className="text-[10px] text-center mb-3" style={{ color: "#8f8b93" }}>
+                Оплата картой · нажми «Купить», оплати и жми «Я оплатил» — монеты придут после проверки
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -3974,9 +4006,10 @@ export default function CaseOpeningSite() {
                   return (
                     <div
                       key={pack.id}
-                      className="rounded-xl overflow-hidden flex flex-col"
-                      style={{ background: "linear-gradient(160deg, #1c1a1f, #17151a)", border: "1px solid #2c2930" }}
+                      className={`rounded-xl overflow-hidden flex flex-col${pack.tag ? " donate-hit" : ""}`}
+                      style={{ background: "linear-gradient(160deg, #1c1a1f, #17151a)", border: "1px solid #2c2930", marginTop: pack.tag ? 10 : 0 }}
                     >
+                      {pack.tag && <div className="donate-badge">{pack.tag}</div>}
                       <div
                         className="relative flex items-center justify-center overflow-hidden"
                         style={{
@@ -4014,13 +4047,28 @@ export default function CaseOpeningSite() {
                         >
                           +{fmtMoney(pack.coins)} <Coin size={13} />
                         </div>
-                        <button
-                          onClick={showDonateToast}
-                          className="w-full mt-2 text-[11px] font-bold py-2 rounded-md"
-                          style={{ background: "#ff5e2e", color: "#121014" }}
-                        >
-                          Купить за {priceLabel}
-                        </button>
+                        {pack.bonus && (
+                          <div className="text-[10px] font-bold mt-0.5" style={{ color: "#ffd76a" }}>
+                            {pack.bonus}
+                          </div>
+                        )}
+                        {donatePendingId === pack.id ? (
+                          <button
+                            onClick={() => confirmDonatePaid(pack, priceLabel, "coins")}
+                            className="w-full mt-2 text-[11px] font-bold py-2 rounded-md"
+                            style={{ background: "#c6ff3d", color: "#121014" }}
+                          >
+                            Я оплатил — забрать монеты
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => startDonate(pack, priceLabel, "coins")}
+                            className="w-full mt-2 text-[11px] font-bold py-2 rounded-md"
+                            style={{ background: "#ff5e2e", color: "#121014" }}
+                          >
+                            Купить за {priceLabel}
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
@@ -4060,10 +4108,24 @@ export default function CaseOpeningSite() {
                         donateCurrency === "uah"
                           ? `${fmtMoney(pack.priceUah)} ₴`
                           : `${fmtMoney(Math.round(pack.priceUah * RUB_MULTIPLIER))} ₽`;
-                      return (
+                      return donatePendingId === `vip:${pack.id}` ? (
                         <button
                           key={pack.id}
-                          onClick={showDonateToast}
+                          onClick={() => confirmDonatePaid(pack, priceLabel, "vip")}
+                          className="flex flex-col items-center rounded-lg py-2.5"
+                          style={{ background: "#c6ff3d", border: "1px solid #c6ff3d" }}
+                        >
+                          <span className="text-xs font-bold" style={{ color: "#121014" }}>
+                            Я оплатил
+                          </span>
+                          <span className="text-[11px] font-bold mt-0.5" style={{ color: "#121014" }}>
+                            {pack.label} — забрать
+                          </span>
+                        </button>
+                      ) : (
+                        <button
+                          key={pack.id}
+                          onClick={() => startDonate(pack, priceLabel, "vip")}
                           className="flex flex-col items-center rounded-lg py-2.5"
                           style={{ background: "linear-gradient(160deg, #1c1a1f, #17151a)", border: "1px solid #2c2930" }}
                         >
@@ -4085,7 +4147,7 @@ export default function CaseOpeningSite() {
                   className="text-xs text-center mt-3 rounded-md py-2 px-3"
                   style={{ background: "linear-gradient(160deg, #1c1a1f, #17151a)", border: "1px solid #2c2930", color: "#ffcc4d" }}
                 >
-                  Оплата подключится позже 🙂
+                  Заявка создана! Монеты и VIP придут после проверки оплаты. Вопросы — {adminContact() || "напиши админу проекта"}.
                 </div>
               )}
             </div>
